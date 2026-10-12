@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills Exchange Platform</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f9; color: #333; }
+  header { background: #111; color: #eee; padding: 14px 30px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: 1px; }
+  main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+  .card { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+  h2 { margin-top: 0; font-size: 18px; }
+  label { display: block; font-size: 13px; margin-top: 10px; color: #555; }
+  input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; font: inherit; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  button { padding: 9px 14px; background: #007bff; color: #fff; border: 0; border-radius: 4px; cursor: pointer; margin-top: 14px; }
+  button:hover { background: #0056b3; }
+  button.secondary { background: #6c757d; } button.danger { background: #dc3545; }
+  button.small { padding: 5px 9px; margin: 0 4px 0 0; font-size: 12px; }
+  .tabs button { background: #ddd; color: #333; margin-top: 0; } .tabs button.active { background: #007bff; color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+  .badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; color: #fff; }
+  .OFFER { background: #28a745; } .WANT { background: #fd7e14; }
+  #msg { position: fixed; top: 14px; right: 14px; padding: 10px 16px; border-radius: 6px; color: #fff; display: none; z-index: 9; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="msg"></div>
+<header>
+  <h1>SKILLS EXCHANGE PLATFORM</h1>
+  <div id="who" class="hidden"><span id="who-name"></span> <button class="small secondary" onclick="logout()">Logout</button></div>
+</header>
+
+<main>
+  <!-- ===== MODULE 1: Auth ===== -->
+  <div id="auth-view">
+    <div class="card tabs">
+      <button id="tab-login" class="active" onclick="showTab('login')">Login</button>
+      <button id="tab-register" onclick="showTab('register')">Register</button>
+    </div>
+
+    <div class="card" id="login-card">
+      <h2>Login</h2>
+      <label>Email<input type="email" id="login-email"></label>
+      <label>Password<input type="password" id="login-password"></label>
+      <button onclick="login()">Login</button>
+    </div>
+
+    <div class="card hidden" id="register-card">
+      <h2>Register</h2>
+      <div class="row">
+        <label>Name<input id="reg-name" maxlength="100"></label>
+        <label>Email<input type="email" id="reg-email"></label>
+      </div>
+      <div class="row">
+        <label>Password (min 6)<input type="password" id="reg-password"></label>
+        <label>Phone<input id="reg-phone" maxlength="15"></label>
+      </div>
+      <label>Availability (e.g. Weekdays 6-8pm)<input id="reg-availability" maxlength="100"></label>
+      <button onclick="register()">Create account</button>
+    </div>
+  </div>
+
+  <!-- ===== Logged-in view ===== -->
+  <div id="app-view" class="hidden">
+    <!-- Module 1: Profile -->
+    <div class="card">
+      <h2>My Profile</h2>
+      <div class="row">
+        <label>Name<input id="p-name" maxlength="100"></label>
+        <label>Email (cannot change)<input id="p-email" disabled></label>
+      </div>
+      <div class="row">
+        <label>Phone<input id="p-phone" maxlength="15"></label>
+        <label>Verification status<input id="p-verif" disabled></label>
+      </div>
+      <label>Availability<input id="p-availability" maxlength="100"></label>
+      <label>Interests<input id="p-interests" maxlength="100"></label>
+      <label>Bio<textarea id="p-bio" rows="2" maxlength="300"></textarea></label>
+      <button onclick="saveProfile()">Save profile</button>
+      <button class="danger" onclick="deleteAccount()">Delete account</button>
+    </div>
+
+    <!-- Module 2: Add / edit skill -->
+    <div class="card">
+      <h2 id="skill-form-title">Add Skill</h2>
+      <input type="hidden" id="s-edit-id">
+      <div class="row">
+        <label>Skill
+          <select id="s-skill"></select>
+        </label>
+        <label>Type
+          <select id="s-type"><option value="OFFER">I offer this skill</option><option value="WANT">I want to learn this skill</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Experience level
+          <select id="s-level"><option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>Expert</option></select>
+        </label>
+        <label>Preferred timing<input id="s-timing" maxlength="100" placeholder="e.g. Sat 10am-12pm"></label>
+      </div>
+      <label>Description<textarea id="s-desc" rows="2" maxlength="300"></textarea></label>
+      <label>Portfolio link<input id="s-link" maxlength="200" placeholder="https://..."></label>
+      <button onclick="saveSkill()" id="s-save">Add skill</button>
+      <button class="secondary hidden" id="s-cancel" onclick="resetSkillForm()">Cancel edit</button>
+      <hr style="margin-top:18px;border:0;border-top:1px solid #eee">
+      <label>Skill not in the list? Add it to the catalogue</label>
+      <div class="row">
+        <input id="c-name" placeholder="Skill name">
+        <input id="c-cat" placeholder="Category">
+      </div>
+      <button class="secondary" onclick="addCatalogue()">Add to catalogue</button>
+    </div>
+
+    <!-- Module 2: My skills -->
+    <div class="card">
+      <h2>My Skills</h2>
+      <table>
+        <thead><tr><th>Skill</th><th>Type</th><th>Level</th><th>Timing</th><th>Details</th><th></th></tr></thead>
+        <tbody id="skills-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('token');
+let mySkills = [];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(text, ok = true) {
+  const m = $('msg'); m.textContent = text; m.style.background = ok ? '#28a745' : '#dc3545';
+  m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 3000);
+}
+
+async function api(path, method = 'GET', body) {
+  const res = await fetch(API + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && token) { logout(); }
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function showTab(t) {
+  $('login-card').classList.toggle('hidden', t !== 'login');
+  $('register-card').classList.toggle('hidden', t !== 'register');
+  $('tab-login').classList.toggle('active', t === 'login');
+  $('tab-register').classList.toggle('active', t === 'register');
+}
+
+// ---------- Module 1 ----------
+async function register() {
+  try {
+    await api('/register', 'POST', {
+      name: $('reg-name').value, email: $('reg-email').value, password: $('reg-password').value,
+      phone: $('reg-phone').value, availability: $('reg-availability').value
+    });
+    toast('Registered! Please log in.'); showTab('login');
+    $('login-email').value = $('reg-email').value;
+  } catch (e) { toast(e.message, false); }
+}
+
+async function login() {
+  try {
+    const r = await api('/login', 'POST', { email: $('login-email').value, password: $('login-password').value });
+    token = r.token; localStorage.setItem('token', token);
+    enterApp();
+  } catch (e) { toast(e.message, false); }
+}
+
+function logout() {
+  token = null; localStorage.removeItem('token');
+  $('app-view').classList.add('hidden'); $('auth-view').classList.remove('hidden'); $('who').classList.add('hidden');
+}
+
+async function loadProfile() {
+  const p = await api('/profile');
+  $('p-name').value = p.name; $('p-email').value = p.email; $('p-phone').value = p.phone || '';
+  $('p-verif').value = p.verification_status; $('p-availability').value = p.availability || '';
+  $('p-interests').value = p.interests || ''; $('p-bio').value = p.bio || '';
+  $('who-name').textContent = p.name;
+}
+
+async function saveProfile() {
+  try {
+    await api('/profile', 'PUT', {
+      name: $('p-name').value, phone: $('p-phone').value, availability: $('p-availability').value,
+      interests: $('p-interests').value, bio: $('p-bio').value
+    });
+    toast('Profile saved'); loadProfile();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function deleteAccount() {
+  if (!confirm('Delete your account and all your skills? This cannot be undone.')) return;
+  try { await api('/profile', 'DELETE'); toast('Account deleted'); logout(); }
+  catch (e) { toast(e.message, false); }
+}
+
+// ---------- Module 2 ----------
+async function loadCatalogue() {
+  const list = await api('/skills/catalogue');
+  $('s-skill').innerHTML = list.map(s => `<option value="${s.skill_id}">${esc(s.skill_name)} (${esc(s.category || 'General')})</option>`).join('');
+}
+
+async function addCatalogue() {
+  try {
+    await api('/skills/catalogue', 'POST', { skill_name: $('c-name').value, category: $('c-cat').value });
+    $('c-name').value = ''; $('c-cat').value = ''; toast('Added to catalogue'); loadCatalogue();
+  } catch (e) { toast(e.message, false); }
+}
+
+async function loadSkills() {
+  mySkills = await api('/my-skills');
+  $('skills-body').innerHTML = mySkills.length ? mySkills.map(s => `
+    <tr>
+      <td>${esc(s.skill_name)}<br><small>${esc(s.category || '')}</small></td>
+      <td><span class="badge ${s.skill_type}">${s.skill_type}</span></td>
+      <td>${esc(s.experience_level)}</td>
+      <td>${esc(s.preferred_timing)}</td>
+      <td>${esc(s.description)}${s.portfolio_link ? `<br><a href="${esc(s.portfolio_link)}" target="_blank" rel="noopener">Portfolio</a>` : ''}</td>
+      <td><button class="small" onclick="editSkill(${s.user_skill_id})">Edit</button><button class="small danger" onclick="removeSkill(${s.user_skill_id})">Remove</button></td>
+    </tr>`).join('') : '<tr><td colspan="6">No skills added yet.</td></tr>';
+}
+
+async function saveSkill() {
+  const editId = $('s-edit-id').value;
+  const body = {
+    skill_id: Number($('s-skill').value), skill_type: $('s-type').value, experience_level: $('s-level').value,
+    description: $('s-desc').value, portfolio_link: $('s-link').value, preferred_timing: $('s-timing').value
+  };
+  try {
+    if (editId) await api('/my-skills/' + editId, 'PUT', body);
+    else await api('/my-skills', 'POST', body);
+    toast(editId ? 'Skill updated' : 'Skill added');
+    resetSkillForm(); loadSkills();
+  } catch (e) { toast(e.message, false); }
+}
+
+function editSkill(id) {
+  const s = mySkills.find(x => x.user_skill_id === id); if (!s) return;
+  $('s-edit-id').value = id; $('s-skill').value = s.skill_id; $('s-skill').disabled = true;
+  $('s-type').value = s.skill_type; $('s-level').value = s.experience_level;
+  $('s-desc').value = s.description || ''; $('s-link').value = s.portfolio_link || ''; $('s-timing').value = s.preferred_timing || '';
+  $('skill-form-title').textContent = 'Edit Skill'; $('s-save').textContent = 'Update skill';
+  $('s-cancel').classList.remove('hidden'); window.scrollTo({ top: 400, behavior: 'smooth' });
+}
+
+function resetSkillForm() {
+  $('s-edit-id').value = ''; $('s-skill').disabled = false;
+  ['s-desc', 's-link', 's-timing'].forEach(i => $(i).value = '');
+  $('skill-form-title').textContent = 'Add Skill'; $('s-save').textContent = 'Add skill';
+  $('s-cancel').classList.add('hidden');
+}
+
+async function removeSkill(id) {
+  if (!confirm('Remove this skill?')) return;
+  try { await api('/my-skills/' + id, 'DELETE'); toast('Skill removed'); loadSkills(); }
+  catch (e) { toast(e.message, false); }
+}
+
+async function enterApp() {
+  $('auth-view').classList.add('hidden'); $('app-view').classList.remove('hidden'); $('who').classList.remove('hidden');
+  try { await Promise.all([loadProfile(), loadCatalogue(), loadSkills()]); }
+  catch (e) { toast(e.message, false); }
+}
+
+if (token) enterApp();
+</script>
+</body>
+</html>
